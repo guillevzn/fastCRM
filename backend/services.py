@@ -1,6 +1,7 @@
 import fastapi as fastapi
 import fastapi.security as security
 import jwt as jwt
+import datetime as dt
 import sqlalchemy.orm as orm
 import passlib.hash as hash
 
@@ -65,4 +66,43 @@ async def create_lead(user: schemas.User, db: orm.Session, lead: schemas.LeadCre
     db.add(lead)
     db.commit()
     db.refresh(lead)
-    return schemas.Lead.model_validate(user)
+    return schemas.Lead.model_validate(lead)
+
+async def get_leads(user: schemas.User, db: orm.Session):
+    leads = db.query(models.Lead).filter_by(owner_id=user.id)
+
+    return list(map(schemas.Lead.model_validate, leads))
+
+async def _lead_selector(lead_id: int, user: schemas.User, db: orm.Session):
+    lead = db.query(models.Lead).filter_by(owner_id=user.id).filter(models.Lead.id == lead_id).first()
+
+    if lead is None:
+        raise fastapi.HTTPException(status_code=404, detail="Lead does not exist")
+    
+    return lead
+
+async def get_lead(lead_id: int, user: schemas.User, db: orm.Session):
+    lead = await _lead_selector(lead_id=lead_id, user=user, db=db)
+
+    return schemas.Lead.model_validate(lead)
+
+async def delete_lead(lead_id: int, user: schemas.User, db: orm.Session):
+    lead = await _lead_selector(lead_id=lead_id, user=user, db=db)
+
+    db.delete(lead)
+    db.commit()
+
+async def update_lead(lead_id: int, lead: schemas.LeadCreate, user: schemas.User, db: orm.Session):
+    lead_db = await _lead_selector(lead_id=lead_id, user=user, db=db)
+
+    lead_db.first_name = lead.first_name
+    lead_db.last_name = lead.last_name
+    lead_db.email = lead.email
+    lead_db.company = lead.company
+    lead_db.note = lead.note
+    lead_db.date_last_updated = dt.datetime.utcnow()
+
+    db.commit()
+    db.refresh(lead_db)
+
+    return schemas.Lead.model_validate(lead_db)
