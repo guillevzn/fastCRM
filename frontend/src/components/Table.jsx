@@ -64,6 +64,31 @@ const Table = () => {
     setId(null);
   };
 
+  const handleSaveLead = async (leadId, field, value) => {
+    const updatedLeads = leads.map(lead => {
+      if (lead.id === leadId) {
+        return { ...lead, [field]: value };
+      }
+      return lead;
+    });
+    setLeads(updatedLeads);
+  
+    const updatedLead = updatedLeads.find(lead => lead.id === leadId);
+    const requestOptions = {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      },
+      body: JSON.stringify(updatedLead),
+    };
+    const response = await fetch(`/api/leads/${leadId}`, requestOptions);
+    if (!response.ok) {
+      setErrorMessage("Failed to update lead");
+    }
+  };
+  
+
   return (
     <> 
     <LeadModal
@@ -79,35 +104,35 @@ const Table = () => {
     </button>
       <ErrorMessage message={errorMessage} />
       {loaded && leads ? (
-        <table className="table is-fullwidth">
+        <table className="table is-fullwidth is-bordered is-hoverable is-vcentered">
           <thead>
             <tr>
-              <th>First name</th>
-              <th>Last name</th>
-              <th>Company</th>
-              <th>Email</th>
-              <th>Note</th>
-              <th>Last updated</th>
-              <th>Actions</th>
+              <th className="has-text-centered">First name</th>
+              <th className="has-text-centered">Last name</th>
+              <th className="has-text-centered">Company</th>
+              <th className="has-text-centered">Email</th>
+              <th className="has-text-centered">Note</th>
+              <th className="has-text-centered">Last updated</th>
+              <th className="has-text-centered">Actions</th>
             </tr>
           </thead>
           <tbody>
             {leads.map((lead) => (
               <tr key={lead.id}>
                 <td>
-                  <InlineEdit value={lead.first_name} setValue={(value) => console.log("Set first_name to", value)} />
+                  <InlineEdit value={lead.first_name} onSave={(value) => handleSaveLead(lead.id, "first_name", value)} />
                 </td>
                 <td>
-                  <InlineEdit value={lead.last_name} setValue={(value) => console.log("Set last_name to", value)} />
+                  <InlineEdit value={lead.last_name} onSave={(value) => handleSaveLead(lead.id, "last_name", value)} />
                 </td>
                 <td>
-                  <InlineEdit value={lead.company} setValue={(value) => console.log("Set company to", value)} />
+                  <InlineEdit value={lead.company} onSave={(value) => handleSaveLead(lead.id, "company", value)} />
                 </td>
                 <td>
-                  <InlineEdit value={lead.email} setValue={(value) => console.log("Set email to", value)} />
+                  <InlineEdit value={lead.email} onSave={(value) => handleSaveLead(lead.id, "email", value)} />
                 </td>
                 <td>
-                  <InlineEdit value={lead.note} setValue={(value) => console.log("Set note to", value)} />
+                  <InlineEdit value={lead.note} onSave={(value) => handleSaveLead(lead.id, "note", value)} />
                 </td>
                 <td>{moment(lead.date_last_updated).format("Do MMM YY")}</td>
                 <td>
